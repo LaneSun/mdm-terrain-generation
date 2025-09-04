@@ -457,7 +457,7 @@ class ElemScope extends Eventer {
     }
 }
 
-const Lui = {};
+globalThis.Lui = {};
 
 Lui.create = (type, ...args) => {
     const scope = new ElemScope(type);
