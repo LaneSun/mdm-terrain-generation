@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html;charset=UTF-8">
+    <title>Simple Text Editor</title>
+    <script src="../src/core.js"></script>
+    <script src="../src/lwebui_patch.js"></script>
+    <script src="../src/lwebui_common.js"></script>
+    <script src="../src/lwebui_utils.js"></script>
+    <style>
+        html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        LWUI_utils.init(document.body);
+        const app_win = LWUI_utils.create_window({
+            id: ["root"],
+            type: "lui_full_window",
+            property: {
+                visible: false
+            },
+            named_items: {body: {
+                type: "lui_list_box",
+                property: {
+                    direction: "y",
+                    align: "start",
+                    flex_grow: true
+                },
+                items: [
+                    {
+                        type: "lui_list_box",
+                        property: {
+                            direction: "x",
+                            align: "start"
+                        },
+                        items: [
+                            {
+                                type: "lui_button",
+                                items: [{
+                                    type: "lui_text",
+                                    property: {
+                                        text: "File"
+                                    }
+                                }]
+                            },{
+                                type: "lui_button",
+                                items: [{
+                                    type: "lui_text",
+                                    property: {
+                                        text: "Edit"
+                                    }
+                                }]
+                            },{
+                                type: "lui_button",
+                                items: [{
+                                    type: "lui_text",
+                                    property: {
+                                        text: "View"
+                                    }
+                                }]
+                            },{
+                                type: "lui_button",
+                                items: [{
+                                    type: "lui_text",
+                                    property: {
+                                        text: "Help"
+                                    }
+                                }]
+                            }
+                        ]
+                    },{
+                        type: "lui_frame",
+                        property: {
+                            flex_grow: true,
+                            flex_shrink: true
+                        },
+                        items: [{
+                            type: "lui_text_view",
+                            property: {
+                                flex_grow: true,
+                                text: "Nothing here >_<||"
+                            }
+                        }]
+                    }
+                ]
+            }}
+        });
+        app_win.set_property(app_win, {visible: true});
+    </script>
+</body>
+</html>
