@@ -5,20 +5,22 @@ const SIZE = 50;
 const calc_mapin = (m, p, n) => m + (n - m) * p;
 const calc_mapfrom = (m, p, n) => (p - m) / (n - m);
 const calc_1_2eX = x => 1 / (2 ** x);
-const calc_vec_mapin = (m, p, n) => m.multiplyScalar(1 - p).add(n.multiplyScalar(p));
+const calc_vec_mapin = (m, p, n) => m.clone().multiplyScalar(1 - p).add(n.clone().multiplyScalar(p));
 
+const cav_container = document.getElementById("cav-container");
 const canvas_gl = document.getElementById("layer-gl");
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x222222);
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(75, cav_container.clientWidth/cav_container.clientHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({canvas: canvas_gl, antialias: true});
 renderer.setPixelRatio( window.devicePixelRatio );
-renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setSize(cav_container.clientWidth, cav_container.clientHeight);
 
 //const grid_helper = new THREE.GridHelper(SIZE, 200 , 0xcccccc, 0xcccccc);
 //scene.add(grid_helper);
 
-const GLViewer = {};
+const GLViewer = new Eventer();
+GLViewer.keep_redraw = false;
 GLViewer.active_frame = 50;
 GLViewer.active = GLViewer.active_frame;
 GLViewer.group = new THREE.Group();
@@ -39,7 +41,7 @@ GLViewer.shader_material = new THREE.ShaderMaterial({
         varying vec4 v_color;
         
         void main() {
-            float h = floor(position.y / 2.5) * 0.3;
+            float h = floor(position.y) * 0.1;
             //v_color = vec4(min(1.0, max(0.0, h * 0.1 - 0.5)), min(1.0, max(0.0, h * 0.1 - 1.0)), min(1.0, h * 0.1), 1);
             v_color = vec4(min(1.0, max(0.0, h - 0.33)), min(1.0, max(0.0, h - 0.67)), min(1.0, h), 1);
             gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
@@ -171,7 +173,8 @@ class Controller extends Eventer {
         this.v_arc = - 0.8;
         this.r_dis = 80;
         this.zoom = 0;
-        this.target = new THREE.Vector3(0, 0, 0);
+        this.target = new THREE.Vector3(0, -10, 0);
+        this.restore_state();
         this.t_h_arc = this.h_arc;
         this.t_v_arc = this.v_arc;
         this.t_zoom = this.zoom;
@@ -197,24 +200,56 @@ class Controller extends Eventer {
         this.h_arc += h;
         this.v_arc += v;
         this.zoom += z;
+        this.save_state();
         GLViewer.do_active();
     }
     pan(x, y) {
         const eul = new THREE.Euler(this.t_v_arc, this.t_h_arc, 0, "YZX");
         GLViewer.do_active();
     }
+    save_state() {
+        localStorage.setItem("GLViewer::control", JSON.stringify({
+            h_arc: this.h_arc,
+            v_arc: this.v_arc,
+            zoom: this.zoom
+        }));
+    }
+    restore_state() {
+        const config = JSON.parse(localStorage.getItem("GLViewer::control")||"null");
+        if (config) {
+            this.h_arc = config.h_arc || this.h_arc;
+            this.v_arc = config.v_arc || this.v_arc;
+            this.zoom = config.zoom || this.zoom;
+        }
+    }
+    reset() {
+        this.h_arc = 0;
+        this.v_arc = - 0.8;
+        this.zoom = 0;
+        this.target = new THREE.Vector3(0, -10, 0);
+        this.save_state();
+        GLViewer.do_active();
+    }
 }
 
 const controller = new Controller();
+GLViewer.controller = controller;
 
-function animate() {
-    //controller.h_arc += 0.01;
-    //controller.v_arc += 0.01;
-    if (GLViewer.is_active()) {
+let last_time = null;
+
+function animate(t) {
+    let dt = 0;
+    if (t !== undefined) {
+        if (last_time === null) last_time = t;
+        dt = t - last_time;
+        last_time = t;
+    }
+    if (GLViewer.is_active() || GLViewer.keep_redraw) {
         controller.update(20);
         controller.apply_camera(camera);
         renderer.render(scene, camera);
         GLViewer.inactive_loop();
+        GLViewer.trigger("redraw", dt);
     }
     requestAnimationFrame(animate);
 }
@@ -226,12 +261,12 @@ function render() {
 
 //animate();
 
-document.addEventListener("contextmenu", (e) => {
+canvas_gl.addEventListener("contextmenu", (e) => {
     e.preventDefault();
     return false;
 })
 
-document.addEventListener("mousemove", (e) => {
+canvas_gl.addEventListener("mousemove", (e) => {
     const mx = e.movementX;
     const my = e.movementY;
     if (e.buttons === 2) {
@@ -239,7 +274,7 @@ document.addEventListener("mousemove", (e) => {
     }
 });
 
-document.addEventListener("wheel", (e) => {
+canvas_gl.addEventListener("wheel", (e) => {
     const dy = e.deltaY;
     controller.change(0, 0, -dy/400);
 });
